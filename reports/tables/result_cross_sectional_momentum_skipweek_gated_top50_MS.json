@@ -1,0 +1,31 @@
+{
+  "strategy": "cross_sectional_momentum_skipweek_gated",
+  "universe": "top50",
+  "cost_tier": "base",
+  "start": "2019-07-01",
+  "end": "2026-07-01",
+  "final_equity": 0.5533122406698607,
+  "n_trades": 872,
+  "total_fee_cost": 0.2547291432636487,
+  "total_slippage_cost": 0.20378331461091892,
+  "avg_turnover_per_rebalance": 1.0380952380952382,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": -0.44668775933013927,
+    "cagr": -0.08101126399025238,
+    "ann_volatility": 0.9100859575834275,
+    "sharpe": 0.2717888047777981,
+    "sortino": 0.5756481274893078,
+    "calmar": -0.08493815880901877,
+    "max_drawdown": -0.9537676013486953,
+    "max_drawdown_days": 62,
+    "win_rate": 0.2235294117647059,
+    "profit_factor": 1.3291383331226045,
+    "avg_win": 0.3795245284966018,
+    "avg_loss": -0.1356323465687425,
+    "payoff_ratio": 2.7981859644686415,
+    "n_periods": 85,
+    "best_period": 1.1228706475313848,
+    "worst_period": -0.42478609395326283
+  }
+}

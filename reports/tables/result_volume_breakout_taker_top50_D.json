@@ -1,0 +1,31 @@
+{
+  "strategy": "volume_breakout_taker",
+  "universe": "top50",
+  "cost_tier": "base",
+  "start": "2019-07-01",
+  "end": "2026-07-01",
+  "final_equity": 329.77486907560734,
+  "n_trades": 514,
+  "total_fee_cost": 17.23822560067797,
+  "total_slippage_cost": 13.790580480542374,
+  "avg_turnover_per_rebalance": 0.05895115183343576,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": 328.77486907560734,
+    "cagr": 1.2880419588058398,
+    "ann_volatility": 0.7208828578609207,
+    "sharpe": 1.500126304087797,
+    "sortino": 1.743411822470253,
+    "calmar": 2.9956568205889527,
+    "max_drawdown": -0.42996979826033876,
+    "max_drawdown_days": 582,
+    "win_rate": 0.2904612978889758,
+    "profit_factor": 1.3978748409226498,
+    "avg_win": 0.03583712793724086,
+    "avg_loss": -0.028219541261378194,
+    "payoff_ratio": 1.2699401313900252,
+    "n_periods": 2558,
+    "best_period": 0.41074856046065267,
+    "worst_period": -0.374957571859871
+  }
+}

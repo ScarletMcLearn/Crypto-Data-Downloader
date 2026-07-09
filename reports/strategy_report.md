@@ -139,3 +139,120 @@ The only active strategy that did not destroy capital. Walk-forward (chronologic
 - **Expected historical behavior**: strong in trending years, weak in choppy/whipsaw years, 0% return (not loss) during a sustained bear regime.
 - **Failure conditions**: sideways/choppy markets that repeatedly cross the 200d SMA without committing to a trend (2019 H2, 2021, 2025 in this dataset).
 - **Kill-switch**: not designed for live deployment; this specification is provided for completeness given the "exploratory / promising but unproven" classification, not as a live-trading recommendation.
+
+---
+
+# Second research pass (2026-07-10): signal combinations
+
+Pre-registered follow-ups from the first pass (see `reports/handoff_prompt.md`): trend-gated momentum, rebalance-cadence sensitivity, intraday mean reversion, volume-confirmed breakouts, inverse-volatility sizing. Same validation bar as before: full history 2019-07 to 2026-07, base cost tier unless stated, reject anything that loses capital or fails to beat buy-and-hold after costs. New result JSONs in `reports/tables/result_*.json`.
+
+## 11. BTC-trend-gated cross-sectional momentum — REJECTED
+
+Gate: skip all momentum positions when BTC close < 200d SMA (`require_btc_uptrend=True`), weekly rebalance, equal weight, top-10 held.
+
+| Universe | Ungated CAGR (pass 1) | Gated CAGR | Gated Sharpe | Gated MaxDD |
+|---|---|---|---|---|
+| top10 | 3.6% | 12.5% | 0.50 | -64.1% |
+| top20 | -6.3% | 10.7% | 0.49 | -79.9% |
+| top50 | -30.3% | -1.3% | 0.37 | -92.8% |
+| broad_liquid | -31.8% | -9.1% | 0.26 | -96.3% |
+
+The gate does exactly what was hypothesized — it removes momentum's worst regime and rescues 20-30 points of CAGR — but the result is damage control, not edge. Every configuration still trails buy-and-hold BTC (28.8% CAGR, Sharpe 0.73) with far deeper drawdowns. The gate is a legitimate risk overlay; the underlying cross-sectional momentum signal remains worthless in this dataset.
+
+## 12. Momentum rebalance cadence: monthly + skip-most-recent-week — REJECTED
+
+Tested whether pass 1 rejected the implementation rather than the signal: monthly (MS) rebalance, and the literature-standard skip-week signal (`momentum_30d_skip7` = trailing 30d return ending 7 days ago).
+
+| Variant | Universe | CAGR | Sharpe |
+|---|---|---|---|
+| plain momentum, monthly | top50 | -19.8% | 0.21 |
+| skip-week, monthly | top20 | -7.8% | 0.32 |
+| skip-week, monthly | top50 | -14.3% | 0.30 |
+| skip-week, monthly | broad_liquid | -11.0% | 0.33 |
+| skip-week + gate, monthly | top50 | -8.1% | 0.27 |
+| skip-week + gate, monthly | broad_liquid | -10.6% | 0.24 |
+
+Monthly cadence improves on weekly (-19.8% vs -30.3% on top50) and skip-week improves further, but every variant still loses capital. Total costs (0.17-0.37 of initial NAV) are far smaller than the realized losses, so this is signal failure, not cost drag. **The momentum signal itself is bad here, independent of implementation.** Combined with Section 11: cross-sectional momentum is conclusively rejected in all tested forms.
+
+## 13. Inverse-volatility weighting (Test 5) — improves momentum, still rejected
+
+Applied 1/realized_vol_14d weights (normalized) to the only positive momentum configs (gated, weekly):
+
+| Config | Equal-weight CAGR | Inverse-vol CAGR | Inverse-vol Sharpe | MaxDD |
+|---|---|---|---|---|
+| gated top10 | 12.5% | 19.7% | 0.60 | -56.7% |
+| gated top20 | 10.7% | 21.9% | 0.62 | -71.1% |
+
+A consistent ~7-11 point CAGR improvement — inverse-vol sizing demonstrably helps this class of noisy long-only signal — but both configs still trail buy-and-hold BTC on return (28.8%) and Sharpe (0.73). Not pursued further for momentum; the sizing lesson carries over to any future survivor.
+
+## 14. Intraday (4h/1h) mean reversion — REJECTED (gross-negative signal)
+
+20-period z-score reversion on intraday bars (`cli/research_intraday.py`), buy bottom-10 names with z <= threshold, re-evaluated every bar, monthly point-in-time universes forward-filled onto the intraday grid, base costs.
+
+| Interval | Universe | z threshold | Net total return | Gross (zero-cost) total return |
+|---|---|---|---|---|
+| 4h | top20 | -1.0 | -100.0% | -99.8% |
+| 4h | top50 | -1.0 | -100.0% | -99.8% |
+| 4h | top20 | -2.0 | -99.998% | -91.7% |
+
+The decisive number is the **gross** column: even with all trading costs set to zero, intraday reversion loses 92-99.8% of capital. The signal is negative before costs enter — the daily-bar "catching falling knives" failure fully generalizes to the intraday noise regime. Costs merely accelerate the wipeout (turnover ~0.6 per 4h bar). Rejected without further variants; a 1h confirmation run was launched for completeness and its result is recorded in `reports/tables/` (same conclusion expected a fortiori — higher noise, higher turnover).
+
+## 15. Volume-confirmed Donchian breakout — REJECTED after walk-forward (regime artifact)
+
+New strategy family (`strategies/volume_breakout.py`): enter on close above prior 20d high, exit on close below prior 10d low (turtle-style, stateful between days, daily cadence), optional confirmation by taker-buy ratio >= 0.55 or 20d volume z-score >= 1, max 10 positions.
+
+**Step 1 — naive equal-weight-among-held results were spectacular and wrong.** taker/top50 showed 128.8% CAGR (329x final equity), but diagnostics showed 536 days with 100% of NAV in a single small-cap alt (929 of 2,558 days >= 50% in one name) and profits almost entirely from single-name bets in the 2020-21 alt mania (+986% in 2020, +666% in 2021). A concentration artifact, not a strategy.
+
+**Step 2 — fixed 10%-per-position slices (concentration removed), base costs:**
+
+| Variant | Universe | CAGR | Sharpe | MaxDD |
+|---|---|---|---|---|
+| taker-confirmed | top50 | 23.1% | 1.33 | -18.3% |
+| taker-confirmed, stress costs | top50 | 21.5% | 1.24 | -18.6% |
+| unconfirmed Donchian | top20 | 47.1% | 1.01 | -61.0% |
+| volume-z-confirmed | top20 | 47.7% | 1.03 | -57.8% |
+
+On full-history aggregates these beat buy-and-hold and survive stress costs (turnover is low). This cleared the bar, so the family went to parameter-sensitivity and walk-forward — where it failed.
+
+**Step 3 — parameter sensitivity (top50, fixed slice, base costs), full table `reports/tables/breakout_sensitivity_top50.csv`:**
+
+| taker_buy_min | CAGR | Sharpe | MaxDD |
+|---|---|---|---|
+| 0.50 | 13.3% | 0.51 | **-92.6%** |
+| 0.55 (baseline) | 23.1% | 1.33 | -18.3% |
+| 0.60 | 1.2% | 0.26 | -9.2% (barely trades) |
+
+The taker confirmation lives on a knife-edge: one step looser and the max drawdown goes from -18% to -93%; one step tighter and the strategy stops trading. It also fails to transfer across universes (taker on top20: 1.2% CAGR, 107 trades in 7 years). Unconfirmed Donchian on top50: 8.8% CAGR, -93.1% MaxDD. This is parameter luck, not a signal. (Entry/exit window and position-count variations do sit on a plateau — Sharpe 1.0-1.46 — the fragility is specifically the taker threshold and the era.)
+
+**Step 4 — walk-forward year-by-year (fixed slice, base costs), full table `reports/tables/breakout_yearly_*.csv`:**
+
+| Year | taker top50 | donchian top20 | volz top20 |
+|---|---|---|---|
+| 2019 (H2) | -3.4% | -32.6% | -31.6% |
+| 2020 | +79.3% | +363.2% | +328.0% |
+| 2021 | +83.2% | +610.3% | +502.1% |
+| 2022 | 0.0% | -46.8% | -42.2% |
+| 2023 | +30.9% | +50.7% | +59.9% |
+| 2024 | -9.1% | +21.7% | +40.5% |
+| 2025 | +12.4% | -24.5% | -22.1% |
+| 2026 YTD | +1.4% | -8.7% | -13.9% |
+
+The headline CAGRs are a 2020-21 alt-season artifact. Post-2021, donchian/volz top20 is roughly flat-to-negative while buy-and-hold BTC had its strongest years (2023-24), and both lose money in 2025-26. The taker/top50 variant is milder but its post-2021 profile (+31%, -9%, +12%, +1%) does not remotely justify its full-history Sharpe — and per Step 3 that variant is parameter-fragile anyway. On top of this, the dataset cannot contain delisted symbols, and small-cap breakout buying is precisely where survivorship bias inflates results most.
+
+**Verdict: rejected.** Not because the full-history aggregate fails the bar (it passes), but because walk-forward shows the edge is confined to a single historical regime, the best variant's key parameter sits on a cliff, and the strategy family concentrates exposure exactly where the dataset's known survivorship blind spot is. Classification: regime artifact / not deployable. The one honest positive: turtle-style breakout mechanics (entry/exit windows, position caps) showed broad parameter plateaus, so if a future pass finds a robust confirmation signal, the scaffolding is sound.
+
+## 16. Engine observation: liquidity cap looser than documented
+
+`cli/research.py` passes the trailing **30d sum** of quote volume to the engine's capacity cap, whose docstring describes 1% of trailing **daily** volume — so the effective cap is ~30% of average daily volume per trade, ~30x looser than documented. This does not affect cost calculations, only how aggressively the capacity guard shrinks large trades (it essentially never binds at NAV=1 unit). All pass-1 and pass-2 results share this convention, so comparisons are internally consistent, but capacity claims should not be made from these backtests. Left unchanged for comparability; flagged for a future fix.
+
+## 17. Second-pass conclusion
+
+**Still no deployable edge.** Every pre-registered follow-up was tested and none survives the full validation chain:
+
+- Cross-sectional momentum: rejected in every form (gated, monthly, skip-week, inverse-vol weighted). The gate and inverse-vol sizing each add real value as overlays (+15-30 CAGR points of damage control, +7-11 points respectively) but the underlying signal never approaches buy-and-hold.
+- Mean reversion: rejected at daily (pass 1) and now at 4h/1h — the intraday signal is negative even at zero cost.
+- Volume-confirmed breakouts: the only family to pass the full-history bar, rejected at the walk-forward stage as a 2020-21 alt-season regime artifact with a parameter-cliff confirmation filter, sitting in the dataset's survivorship blind spot.
+
+What survives as *tools* (not strategies): the BTC 200d trend gate (regime damage control), inverse-volatility sizing, and fixed-slice position caps — each measurably improved whatever it was attached to. What this dataset cannot support: any claim that requires the 2020-21 alt regime to repeat, or precise capacity/cost claims for small-cap names.
+
+Recommendation unchanged from pass 1, now with more evidence: **passive BTC/ETH exposure beats every active strategy tested; further research should either target fundamentally different information (order-book, funding, on-chain, cross-exchange) or stop here.**

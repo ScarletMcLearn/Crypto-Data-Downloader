@@ -1,0 +1,31 @@
+{
+  "strategy": "volume_breakout_volz",
+  "universe": "top20",
+  "cost_tier": "base",
+  "start": "2019-07-01",
+  "end": "2026-07-01",
+  "final_equity": 20.954735290401143,
+  "n_trades": 3073,
+  "total_fee_cost": 4.9772414510250735,
+  "total_slippage_cost": 3.9817931608200583,
+  "avg_turnover_per_rebalance": 0.12036736999584084,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": 19.954735290401143,
+    "cagr": 0.5438566025361431,
+    "ann_volatility": 0.8537102481132395,
+    "sharpe": 0.9326980497665679,
+    "sortino": 1.2689688730581452,
+    "calmar": 0.6919404066259943,
+    "max_drawdown": -0.7859876332241816,
+    "max_drawdown_days": 1050,
+    "win_rate": 0.4390148553557467,
+    "profit_factor": 1.1631142154851735,
+    "avg_win": 0.03543317220554052,
+    "avg_loss": -0.0321835659924632,
+    "payoff_ratio": 1.1009709804637038,
+    "n_periods": 2558,
+    "best_period": 0.4864194936371511,
+    "worst_period": -0.3314566733688431
+  }
+}

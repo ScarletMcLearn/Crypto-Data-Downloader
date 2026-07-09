@@ -31,7 +31,13 @@ def build_volume_breakout_weights(
     volume_z_min: float = 1.0,
     max_positions: int = 10,
     require_btc_uptrend: bool = False,
+    fixed_slice: bool = False,
+    entry_col: str = "prior_high_20d",
+    exit_col: str = "prior_low_10d",
 ) -> pd.DataFrame:
+    """fixed_slice=True gives every held position a constant 1/max_positions
+    weight (unfilled slots stay in cash), eliminating the concentration
+    artifact where a lone holding receives 100% of NAV."""
     dates = sorted(universe_by_date.keys())
     all_symbols = sorted({s for syms in universe_by_date.values() for s in syms})
 
@@ -43,12 +49,14 @@ def build_volume_breakout_weights(
     for d in dates:
         eligible = set(universe_by_date[d])
 
+        slice_w = (1.0 / max_positions) if fixed_slice else None
+
         try:
             day_slice = panel_indexed.loc[(d,)]
         except KeyError:
             # No panel rows for this date: carry the held set forward as-is.
             if held:
-                weights.loc[d, sorted(held)] = 1.0 / len(held)
+                weights.loc[d, sorted(held)] = slice_w if fixed_slice else 1.0 / len(held)
             continue
 
         # Exits first: prior 10d low breach, or symbol left the universe,
@@ -58,7 +66,7 @@ def build_volume_breakout_weights(
             if sym not in eligible or sym not in day_slice.index:
                 continue
             row = day_slice.loc[sym]
-            if pd.notna(row["prior_low_10d"]) and row["close"] < row["prior_low_10d"]:
+            if pd.notna(row[exit_col]) and row["close"] < row[exit_col]:
                 continue
             still_held.add(sym)
         held = still_held
@@ -70,8 +78,8 @@ def build_volume_breakout_weights(
 
         if btc_ok:
             cand = day_slice[day_slice.index.isin(eligible)]
-            cand = cand.dropna(subset=["prior_high_20d"])
-            breakout = cand[cand["close"] > cand["prior_high_20d"]]
+            cand = cand.dropna(subset=[entry_col])
+            breakout = cand[cand["close"] > cand[entry_col]]
 
             if confirm == "taker":
                 breakout = breakout[breakout["taker_buy_ratio"] >= taker_buy_min]
@@ -85,13 +93,13 @@ def build_volume_breakout_weights(
             # must ration slots.
             room = max_positions - len(held)
             if room > 0 and not breakout.empty:
-                strength = (breakout["close"] / breakout["prior_high_20d"] - 1.0).sort_values(ascending=False)
+                strength = (breakout["close"] / breakout[entry_col] - 1.0).sort_values(ascending=False)
                 for sym in strength.index:
                     if len(held) >= max_positions:
                         break
                     held.add(sym)
 
         if held:
-            weights.loc[d, sorted(held)] = 1.0 / len(held)
+            weights.loc[d, sorted(held)] = slice_w if fixed_slice else 1.0 / len(held)
 
     return weights

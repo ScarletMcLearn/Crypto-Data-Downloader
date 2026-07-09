@@ -1,0 +1,31 @@
+{
+  "strategy": "cross_sectional_momentum_gated_ivol",
+  "universe": "top20",
+  "cost_tier": "base",
+  "start": "2019-07-01",
+  "end": "2026-07-01",
+  "final_equity": 3.9835924899446806,
+  "n_trades": 2787,
+  "total_fee_cost": 0.9569490195685912,
+  "total_slippage_cost": 0.765559215654873,
+  "avg_turnover_per_rebalance": 0.46122529424735886,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": 2.9835924899446806,
+    "cagr": 0.21895912992409672,
+    "ann_volatility": 0.6651381513676244,
+    "sharpe": 0.6245801025631758,
+    "sortino": 0.7917540456385572,
+    "calmar": 0.3079315062776842,
+    "max_drawdown": -0.7110643940625074,
+    "max_drawdown_days": 268,
+    "win_rate": 0.2876712328767123,
+    "profit_factor": 1.3836615520060944,
+    "avg_win": 0.09988271497658284,
+    "avg_loss": -0.06264182387555448,
+    "payoff_ratio": 1.59450521707369,
+    "n_periods": 365,
+    "best_period": 0.4552871296685368,
+    "worst_period": -0.48573993286610195
+  }
+}

@@ -113,6 +113,7 @@ def run_strategy(
             confirm=confirm,
             max_positions=top_n,
             require_btc_uptrend="gated" in strategy,
+            fixed_slice="fixed" in strategy,
         )
         universe_symbols = symbols_needed
     elif strategy == "buy_and_hold_btc":
