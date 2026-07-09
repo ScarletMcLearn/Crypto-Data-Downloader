@@ -1,0 +1,92 @@
+# Universe construction configuration.
+#
+# All exclusions here are static, name-based lists derived from manual
+# inspection of data/raw/binance/spot/current_universe.json during the
+# Phase 1 data audit (2026-07). They exist to keep obviously non-crypto or
+# structurally special instruments out of momentum/mean-reversion universes.
+# They do NOT use any point-in-time information and are applied uniformly
+# across all history for a given symbol.
+#
+# IMPORTANT: this list is not guaranteed complete. New tokenized-stock or
+# stablecoin listings may appear after this file was written. Treat this as
+# a best-effort, human-reviewed filter, not an exhaustive taxonomy.
+
+exclusions:
+  stablecoins:
+    # Base assets that are themselves fiat-pegged stablecoins/synthetics.
+    # Trading FOOUSDT where FOO is itself a dollar-stable asset is not a
+    # meaningful crypto momentum/reversion bet.
+    - AEUR
+    - BFUSD
+    - EURI
+    - RLUSD
+    - USD1
+    - USDE
+    - USDS
+
+  tokenized_stocks:
+    # Binance-listed tokenized equity/ETF products (base asset ends in "B",
+    # mirroring a US stock/ETF ticker). Confirmed by manual ticker lookup;
+    # SHIB (Shiba Inu) is explicitly excluded from this pattern-match since
+    # it coincidentally ends in "B" but is an ordinary long-standing token.
+    - AMDB
+    - CBRSB
+    - COINB
+    - CRCLB
+    - DRAMB
+    - EWYB
+    - GLWB
+    - GOOGLB
+    - INTCB
+    - LITEB
+    - METAB
+    - MSFTB
+    - MSTRB
+    - NBISB
+    - NVDAB
+    - PLTRB
+    - QCOMB
+    - QQQB
+    - SNDKB
+    - SOXLB
+    - SPCXB
+    - SPYB
+    - TSLAB
+    - WDCB
+
+  leveraged_tokens:
+    # Binance leveraged/3x tokens historically used suffixes like UP/DOWN/
+    # BULL/BEAR/3L/3S. None were found among the 447 currently-trading
+    # symbols as of the Phase 1 audit, but the pattern is kept here in case
+    # new listings reintroduce them. JUP (Jupiter) and SYRUP (Syrup Finance)
+    # are explicitly NOT leveraged tokens despite matching a naive "UP"
+    # suffix regex, and must stay excluded from this list.
+    []
+
+# Point-in-time programmatic rules (implemented in
+# crypto_research/universe/builder.py), not static lists:
+#   - min_history_days: minimum trading days before a symbol becomes
+#     eligible for signal calculation (default 180)
+#   - min_trailing_quote_volume_usd: liquidity floor using only trailing
+#     (lagged) quote volume as of the rebalance date
+#   - all rankings (top 10/20/50 by trailing quote volume) are recomputed
+#     at every rebalance date using only data available at or before t
+
+rules:
+  min_history_days: 180
+  min_trailing_quote_volume_usd: 1_000_000  # 1-day trailing quote volume floor for the broad liquid universe
+  trailing_volume_window_days: 30  # window used to rank/filter by "trailing quote volume"
+
+universes:
+  - id: btc_eth
+    description: "BTC and ETH only. Simplest possible benchmark universe."
+  - id: top10
+    description: "Top 10 symbols by trailing 30d quote volume, point-in-time, excluding static exclusion lists."
+  - id: top20
+    description: "Top 20 symbols by trailing 30d quote volume, point-in-time, excluding static exclusion lists."
+  - id: top50
+    description: "Top 50 symbols by trailing 30d quote volume, point-in-time, excluding static exclusion lists."
+  - id: broad_liquid
+    description: "All symbols meeting min_history_days and min_trailing_quote_volume_usd at time t, excluding static exclusion lists."
+  - id: current_universe_survivorship_biased
+    description: "The 447 symbols in current_universe.json applied across all history. Clearly biased: only includes symbols still trading today. Provided ONLY as a labelled benchmark to quantify survivorship bias, never for strategy selection."

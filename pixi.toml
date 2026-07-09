@@ -1,0 +1,23 @@
+[project]
+name = "binance-pp"
+version = "0.1.0"
+description = "Binance spot kline research pipeline (Python deps managed by uv; pixi wraps task commands)"
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+
+[dependencies]
+python = "3.12.*"
+uv = ">=0.5"
+
+[tasks]
+sync = "uv sync"
+data-audit = "uv run python -m crypto_research.cli.audit"
+data-build = "uv run python -m crypto_research.data.build"
+universe = "uv run python -m crypto_research.cli.universe"
+research = "uv run python -m crypto_research.cli.research"
+backtest = "uv run python -m crypto_research.cli.compare"
+validate = "uv run python -m crypto_research.cli.walkforward"
+report = "uv run python -m crypto_research.cli.make_charts"
+
+[activation]
+env = { UV_PROJECT_ENVIRONMENT = ".venv" }

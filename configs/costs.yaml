@@ -1,0 +1,47 @@
+# Transaction cost assumptions for backtesting.
+#
+# The raw kline archives contain no historical fee tiers, bid-ask spreads,
+# or order-book depth. Every number below is an ASSUMPTION, not a measured
+# historical fact, and is clearly labelled as such. Binance spot maker/taker
+# fees have changed over time and vary by VIP tier and BNB fee discount;
+# using today's fee schedule for all of 2019-2026 would itself be a form of
+# lookahead bias, so instead we use round, deliberately conservative-looking
+# assumptions and stress-test sensitivity to them (Phase 7).
+#
+# All costs are one-way (applied once per side: once on entry, once on exit).
+# slippage_bps and spread_bps are combined additively into a single
+# round-trip-adjusted per-side cost in the backtest engine.
+
+tiers:
+  optimistic:
+    description: "Best case: high VIP tier / BNB fee discount, deep liquidity, tight spreads. Unrealistic for most retail-sized accounts but useful as an upper bound."
+    taker_fee_bps: 4.0       # 0.04%, roughly Binance VIP taker fee with BNB discount (assumption)
+    spread_bps: 1.0
+    slippage_bps: 2.0
+
+  base:
+    description: "Reasonable default for a retail account trading liquid top-50 pairs without a fee discount."
+    taker_fee_bps: 10.0      # 0.10%, standard Binance spot taker fee (assumption, no BNB discount)
+    spread_bps: 3.0
+    slippage_bps: 5.0
+
+  conservative:
+    description: "Standard fee tier plus wider spread/slippage assumptions for less liquid pairs or larger orders."
+    taker_fee_bps: 10.0
+    spread_bps: 8.0
+    slippage_bps: 15.0
+
+  stress:
+    description: "Stress test: elevated slippage simulating thin liquidity, volatile markets, or larger position sizes relative to available depth."
+    taker_fee_bps: 10.0
+    spread_bps: 15.0
+    slippage_bps: 40.0
+
+liquidity:
+  # Cap any single trade's notional to this fraction of the symbol's
+  # trailing 30-day average DAILY quote volume, to avoid unrealistic fills.
+  # This is a simplification: real market impact is nonlinear and depends
+  # on order-book depth we do not have. Treat as a coarse capacity guard,
+  # not a precise impact model.
+  max_trade_pct_of_trailing_daily_quote_volume: 0.01  # 1%
+  min_trailing_quote_volume_usd_to_trade: 1_000_000

@@ -1,0 +1,31 @@
+{
+  "strategy": "cross_sectional_momentum",
+  "universe": "top20",
+  "cost_tier": "base",
+  "start": "2023-01-01",
+  "end": "2024-01-01",
+  "final_equity": 1.0251522097775958,
+  "n_trades": 203,
+  "total_fee_cost": 0.03806748586037412,
+  "total_slippage_cost": 0.030453988688299287,
+  "avg_turnover_per_rebalance": 0.7807692307692307,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": 0.025152209777595802,
+    "cagr": 0.025222173449073848,
+    "ann_volatility": 0.7973940869053685,
+    "sharpe": 0.40522469629186186,
+    "sortino": 0.7893499932238522,
+    "calmar": 0.036949161586258994,
+    "max_drawdown": -0.6826182886502548,
+    "max_drawdown_days": 41,
+    "win_rate": 0.37735849056603776,
+    "profit_factor": 1.1660720599665932,
+    "avg_win": 0.11530517054100634,
+    "avg_loss": -0.06180212532507945,
+    "payoff_ratio": 1.8657152959465493,
+    "n_periods": 53,
+    "best_period": 0.3711087280206362,
+    "worst_period": -0.22494567042942437
+  }
+}

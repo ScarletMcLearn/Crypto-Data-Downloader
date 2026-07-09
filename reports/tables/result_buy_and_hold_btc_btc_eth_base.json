@@ -1,0 +1,31 @@
+{
+  "strategy": "buy_and_hold_btc",
+  "universe": "btc_eth",
+  "cost_tier": "base",
+  "start": "2023-01-01",
+  "end": "2024-01-01",
+  "final_equity": 2.4642625222226067,
+  "n_trades": 1,
+  "total_fee_cost": 0.001,
+  "total_slippage_cost": 0.0007999999999999999,
+  "avg_turnover_per_rebalance": 0.019230769230769232,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": 1.4642625222226067,
+    "cagr": 497.27245937581364,
+    "ann_volatility": 1.3417957943904968,
+    "sharpe": 5.278983846617984,
+    "sortino": 13.663981355847076,
+    "calmar": 3188.2024632143525,
+    "max_drawdown": -0.15597267272495063,
+    "max_drawdown_days": 16,
+    "win_rate": 0.49056603773584906,
+    "profit_factor": 2.424799829120213,
+    "avg_win": 0.06732377423859044,
+    "avg_loss": -0.02776467295571257,
+    "payoff_ratio": 2.424799829120213,
+    "n_periods": 53,
+    "best_period": 0.2716611409407872,
+    "worst_period": -0.10626081769488227
+  }
+}
