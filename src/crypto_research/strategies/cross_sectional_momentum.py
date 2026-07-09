@@ -25,6 +25,8 @@ def build_cross_sectional_momentum_weights(
     momentum_col: str = "momentum_30d",
     top_n: int = 10,
     require_btc_uptrend: bool = False,
+    weighting: str = "equal",
+    vol_col: str = "realized_vol_14d",
 ) -> pd.DataFrame:
     """feature_panel: long DataFrame with columns [open_time, symbol,
     momentum_col, btc_trend_up (if require_btc_uptrend)].
@@ -65,7 +67,15 @@ def build_cross_sectional_momentum_weights(
         if top.empty:
             continue
 
-        weight_each = 1.0 / len(top)
-        weights.loc[d, top.index] = weight_each
+        if weighting == "inverse_vol":
+            vols = day_slice.loc[top.index, vol_col]
+            inv = 1.0 / vols.replace(0.0, pd.NA)
+            inv = inv.dropna()
+            if inv.empty:
+                weights.loc[d, top.index] = 1.0 / len(top)
+            else:
+                weights.loc[d, inv.index] = (inv / inv.sum()).astype(float)
+        else:
+            weights.loc[d, top.index] = 1.0 / len(top)
 
     return weights

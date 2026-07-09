@@ -65,6 +65,11 @@ def compute_symbol_features(df: pd.DataFrame) -> pd.DataFrame:
     for w in MOMENTUM_WINDOWS:
         out[f"momentum_{w}d"] = out["close"] / out["close"].shift(w) - 1.0
 
+    # Skip-most-recent-week momentum (standard momentum-literature convention):
+    # trailing 30d return measured up to 7 days ago, so the most recent week's
+    # short-term reversal noise is excluded from the ranking signal.
+    out["momentum_30d_skip7"] = out["close"].shift(7) / out["close"].shift(37) - 1.0
+
     out["true_range"] = _true_range(out)
     out[f"atr_{VOLATILITY_WINDOW}d"] = out["true_range"].rolling(VOLATILITY_WINDOW).mean()
     out[f"realized_vol_{VOLATILITY_WINDOW}d"] = out["log_return_1d"].rolling(VOLATILITY_WINDOW).std() * np.sqrt(365)
@@ -78,6 +83,12 @@ def compute_symbol_features(df: pd.DataFrame) -> pd.DataFrame:
     out[f"donchian_high_{BREAKOUT_WINDOW}d"] = rolling_high
     out[f"donchian_low_{BREAKOUT_WINDOW}d"] = rolling_low
     out[f"breakout_dist_{BREAKOUT_WINDOW}d"] = (out["close"] - rolling_high) / rolling_high
+
+    # Breakout levels relative to the PRIOR window (shifted by one bar so a
+    # candle is never compared against its own high/low): a close above
+    # prior_high_20d is a fresh Donchian breakout as of t.
+    out["prior_high_20d"] = out["high"].rolling(BREAKOUT_WINDOW).max().shift(1)
+    out["prior_low_10d"] = out["low"].rolling(10).min().shift(1)
 
     rolling_peak = out["close"].cummax()
     out["drawdown_from_peak"] = out["close"] / rolling_peak - 1.0
