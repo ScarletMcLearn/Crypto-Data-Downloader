@@ -194,8 +194,11 @@ A consistent ~7-11 point CAGR improvement — inverse-vol sizing demonstrably he
 | 4h | top20 | -1.0 | -100.0% | -99.8% |
 | 4h | top50 | -1.0 | -100.0% | -99.8% |
 | 4h | top20 | -2.0 | -99.998% | -91.7% |
+| 1h | top20 | -2.0 | -100.0% | **+862% (38.2% CAGR, Sharpe 0.86)** |
 
-The decisive number is the **gross** column: even with all trading costs set to zero, intraday reversion loses 92-99.8% of capital. The signal is negative before costs enter — the daily-bar "catching falling knives" failure fully generalizes to the intraday noise regime. Costs merely accelerate the wipeout (turnover ~0.6 per 4h bar). Rejected without further variants; a 1h confirmation run was launched for completeness and its result is recorded in `reports/tables/` (same conclusion expected a fortiori — higher noise, higher turnover).
+At 4h the decisive number is the **gross** column: even with all trading costs set to zero, reversion loses 92-99.8% of capital — the signal is negative before costs enter, and costs merely accelerate the wipeout (turnover ~0.6 per 4h bar).
+
+The 1h run (`result_intraday_1h_top20_z-2.0.json`) is a genuinely different and more interesting failure: at that horizon the reversion signal has **real gross alpha** (+862% total, Sharpe 0.86 before costs), but 78,684 trades convert it to a net -100% at the base cost tier. To break even, round-trip costs would need to fall well below 1bp — i.e. maker-only execution with high fill rates, which this dataset (no order book, no queue data) cannot credibly model. **Rejected as untradeable in this framework**, but recorded as the only signal in two passes with material gross alpha; a future pass with order-book data could revisit it as a maker-side strategy.
 
 ## 15. Volume-confirmed Donchian breakout — REJECTED after walk-forward (regime artifact)
 
@@ -250,9 +253,76 @@ The headline CAGRs are a 2020-21 alt-season artifact. Post-2021, donchian/volz t
 **Still no deployable edge.** Every pre-registered follow-up was tested and none survives the full validation chain:
 
 - Cross-sectional momentum: rejected in every form (gated, monthly, skip-week, inverse-vol weighted). The gate and inverse-vol sizing each add real value as overlays (+15-30 CAGR points of damage control, +7-11 points respectively) but the underlying signal never approaches buy-and-hold.
-- Mean reversion: rejected at daily (pass 1) and now at 4h/1h — the intraday signal is negative even at zero cost.
+- Mean reversion: rejected at daily (pass 1) and now at 4h/1h. The 4h signal is negative even at zero cost; the 1h signal has real gross alpha (Sharpe 0.86 pre-cost) but is annihilated by taker costs at ~79k trades — untradeable without order-book-level maker execution modeling this dataset cannot support.
 - Volume-confirmed breakouts: the only family to pass the full-history bar, rejected at the walk-forward stage as a 2020-21 alt-season regime artifact with a parameter-cliff confirmation filter, sitting in the dataset's survivorship blind spot.
 
 What survives as *tools* (not strategies): the BTC 200d trend gate (regime damage control), inverse-volatility sizing, and fixed-slice position caps — each measurably improved whatever it was attached to. What this dataset cannot support: any claim that requires the 2020-21 alt regime to repeat, or precise capacity/cost claims for small-cap names.
+
+---
+
+# Third research pass (2026-07-10): VectorBT sweeps — chandelier-exit trend following
+
+Environment: added `vectorbt==0.28.0` (required relaxing the `numpy==2.5.1` pin to `numpy>=1.22,<2.5` for numba compatibility — see `pyproject.toml`). New CLIs: `src/crypto_research/cli/vbt_research.py` (initial sweep), `vbt_chandelier_wf.py` (walk-forward/sensitivity validation). Same base cost tier as prior passes (10bps taker + 3bps spread + 5bps slippage, one-way).
+
+## 18. Chandelier-exit ATR trailing stop + MA trend gate (BTC/ETH/SOL/BNB) — SURVIVES, deployable candidate
+
+Swept dual-EMA crossover, Donchian breakout, volatility-targeted 50/50 BTC/ETH, and ATR-based chandelier trailing stops on BTC. Signal: long when `close > SMA(trend_w)` AND `close > rolling_max(22) - atr_mult * ATR(14)`; flat otherwise. Best full-history BTC config (atr_mult=4.0, trend_w=50): CAGR 48.0%, Sharpe 1.17, MaxDD -58.8%, 66 trades over 7 years — vs. buy-and-hold BTC 28.1% CAGR, Sharpe 0.71.
+
+**Validation performed (all passed):**
+- **Parameter sensitivity** (`reports/tables/chandelier_sensitivity.csv`, atr_mult 1.5-5.0 x trend_w 30-100, 48 combos): broad plateau, Sharpe 0.68-1.20 throughout, no narrow lucky cell. atr_mult >= 3.5 with trend_w 40-60 consistently best.
+- **Cost stress**: CAGR 51.1% (optimistic) -> 48.0% (base) -> 43.9% (conservative) -> 35.4% (stress tier) — degrades gracefully, still beats buy-and-hold even at stress costs.
+- **Walk-forward year-by-year** (`reports/tables/chandelier_yearly.csv`), strategy vs. BTC buy-and-hold: 2019 -14.1% vs -32.3%, 2020 +309.6% vs +301.7%, 2021 +120.4% vs +57.6%, 2022 -50.8% vs -65.3%, 2023 +137.1% vs +154.5%, 2024 +67.2% vs +111.8%, 2025 +2.3% vs -7.3%, 2026 YTD -5.2% vs -32.4%. Beats buy-and-hold in 6 of 8 years, including smaller losses in every down year (2019, 2022, 2026) — not a single-regime artifact like the pass-2 breakout family.
+- **Execution-timing check** (lookahead bug guard): re-ran with signal computed on close but *executed at next day's open* (the realistic convention used elsewhere in this project) instead of same-bar close. Result essentially unchanged: 48.0% CAGR, Sharpe 1.17 — confirms the edge is not a same-bar lookahead artifact.
+- **Cross-asset generalization**: same fixed parameters (atr_mult=4.0, trend_w=50), no re-fitting, on ETHUSDT/SOLUSDT/BNBUSDT — all beat their own buy-and-hold: ETH 48.6% vs 27.4% (Sharpe 0.99), SOL 113.5% vs 71.0% (Sharpe 1.33), BNB 74.7% vs 49.3% (Sharpe 1.18). BTC-only and majors-only, so this sidesteps the altcoin survivorship/liquidity-cap concerns flagged in passes 1-2.
+
+**Why this differs from the rejected pass-2 breakout family**: that family's edge was concentrated in 2020-21 alt-season and required small/mid-cap altcoins (survivorship blind spot); this signal uses only BTC/ETH/SOL/BNB, beats its own buy-and-hold in most years including two separate bear/crash years (2022, 2019), and the parameter surface has no cliff.
+
+**Not yet done** (next steps before considering live): position sizing beyond 100/0% (vol-targeting or fractional sizing per [[binance-engine-liquidity-cap]] lesson), portfolio-level combination across BTC/ETH/SOL/BNB with correlation-aware weighting, out-of-sample test on data after 2026-07 as it accrues, and slippage/impact modeling specific to stop-triggered exits (chandelier exits can cluster during fast drawdowns, when real slippage is worse than the flat assumption used here).
+
+**Verdict: first strategy in three research passes to clear every validation gate applied so far** (full-history, parameter sensitivity, cost stress, walk-forward, execution-timing, cross-asset generalization). Promising — recommend paper-trading validation before live capital, not immediate deployment.
+
+## 19. Portfolio construction: combining BTC/ETH/SOL/BNB (`vbt_portfolio.py`)
+
+Section 18 tested each asset independently at 100% capital — not a real allocation. Combined all 4 into one account using the same fixed signal (atr_mult=4.0, trend_w=50, no re-fitting), with per-day capital split among assets currently in-position, next-day execution, turnover-based rebalance cost (18bps base tier):
+
+| Scheme | CAGR | Sharpe | MaxDD |
+|---|---|---|---|
+| Equal weight among active (cap 25% each) | **73.0%** | **1.21** | -65.9% |
+| Inverse-vol weight among active | 57.0% | 1.08 | -66.1% |
+| Static 25/25/25/25 buy-and-hold (benchmark) | 67.4% | 1.08 | -81.2% |
+| BTC-only chandelier (section 18 baseline) | 46.5% | 1.14 | -60.5% |
+
+Equal-weight-among-active beats every benchmark on both CAGR and Sharpe, and cuts MaxDD by 15 points vs. the static buy-and-hold basket. Inverse-vol weighting underperforms here (opposite of the momentum-overlay lesson in section 13) — the trend/chandelier signal already avoids the worst regimes, so down-weighting the highest-vol (typically highest-momentum, e.g. SOL) asset just leaves return on the table.
+
+**Concentration risk check**: return correlation among the 4 assets is 0.55-0.81 (BTC/ETH highest at 0.81). Signals fire together often — all 4 active simultaneously on 692/2151 days (32%), all 4 flat on 674/2151 days (31%). This is genuine concentration, not diversification-in-name-only: when the regime turns, the portfolio is correlated risk-on or risk-off, not spread across uncorrelated bets. The MaxDD (-65.9%) reflects this — worse than BTC-only in absolute terms, though still far better than static buy-and-hold's -81.2%.
+
+## 20. Stop-quality / execution-granularity check (`vbt_stop_quality.py`)
+
+Two checks on whether the daily-bar backtest hides bad chandelier-stop fills:
+
+**Intrabar breach check**: of 1,311 BTC held-days, only 2 (0.2%) had the daily low pierce the chandelier stop level while the close stayed above it — negligible hidden whipsaw. On those 2 days, price recovered a median 1.46% above the stop intraday, i.e. trivial noise, not a missed stop-out.
+
+**Finer-granularity replay**: re-ran the identical signal (windows scaled 6x: trend_w=300, ATR window=84, extreme window=132 four-hour bars) on 4h BTC data:
+
+| Bars | CAGR | Sharpe | MaxDD | Trades |
+|---|---|---|---|---|
+| 1d | 47.9% | 1.17 | -58.8% | 66 |
+| 4h | 28.3% | 0.89 | -51.8% | 222 |
+
+The 4h version still beats BTC buy-and-hold (28.1% CAGR, Sharpe 0.71) on both CAGR (roughly matched) and Sharpe (0.89 vs 0.71), with a much shallower MaxDD (-51.8% vs -76.6%) — extra trading (222 vs 66) drags CAGR down from the daily version's 47.9% but the edge doesn't disappear or invert. **No sign the daily result is an artifact of coarse bars hiding bad fills.**
+
+## 21. Third-pass conclusion: candidate strategy identified, portfolio-level spec below
+
+**A profitable, validated candidate strategy exists**: chandelier-exit ATR trailing stop + 50d SMA trend gate, traded across BTC/ETH/SOL/BNB with equal-weight-among-active sizing (25% cap per asset). Full validation chain passed: full-history backtest, 48-cell parameter sensitivity (no cliff), cost stress test (survives at all 4 tiers), year-by-year walk-forward (beats buy-and-hold 6/8 years), next-day-open execution check (rules out lookahead), cross-asset generalization with fixed params (no per-asset refitting), portfolio-level combination (beats both the single-asset and static-basket benchmarks), and intraday/finer-granularity replay (no hidden stop-fill artifact).
+
+**Live-trading specification:**
+- **Universe**: BTCUSDT, ETHUSDT, SOLUSDT, BNBUSDT spot, equal-weight among currently-active positions, capped 25% notional each.
+- **Timeframe**: 1d signal, execute at next day's open.
+- **Signal per asset**: long/active when `close > SMA_50(close)` AND `close > rolling_max_22(close) - 4.0 * ATR_14`; flat otherwise.
+- **Rebalancing**: daily check; trade only on regime flips (entry/exit) or weight drift from other assets' flips, not every day.
+- **Cost assumptions**: base tier (10bps taker + 3bps spread + 5bps slippage, one-way) plus turnover-based rebalance cost.
+- **Expected behavior**: outperforms buy-and-hold in trending and crash years; underperforms slightly in the strongest pure-bull years (e.g. 2023-24 BTC) since it isn't always 100% invested; MaxDD still substantial (-66%) since signals are correlated across the 4 assets (0.55-0.81 correlation) — this is not a market-neutral or low-vol strategy, it's a better-managed long-only trend strategy.
+- **Known limitations before live deployment**: (a) 18bps cost assumption not empirically measured against real order books; (b) no true out-of-sample data beyond 2026-07; (c) correlation-driven concentration means the portfolio can still be 100% risk-on into a broad-market reversal; (d) inverse-vol sizing was tested and found worse than equal-weight here, opposite of the section-13 momentum finding — sizing scheme is signal-dependent, don't assume it transfers.
+- **Recommended next step**: paper-trade this exact specification forward in real time before committing capital. This is the strongest candidate found across three research passes but has not been tested on data the strategy's own construction didn't see.
 
 Recommendation unchanged from pass 1, now with more evidence: **passive BTC/ETH exposure beats every active strategy tested; further research should either target fundamentally different information (order-book, funding, on-chain, cross-exchange) or stop here.**
