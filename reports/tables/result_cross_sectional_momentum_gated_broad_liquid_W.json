@@ -1,0 +1,31 @@
+{
+  "strategy": "cross_sectional_momentum_gated",
+  "universe": "broad_liquid",
+  "cost_tier": "base",
+  "start": "2019-07-01",
+  "end": "2026-07-01",
+  "final_equity": 0.5156753179027681,
+  "n_trades": 1890,
+  "total_fee_cost": 0.7050408329771165,
+  "total_slippage_cost": 0.5640326663816932,
+  "avg_turnover_per_rebalance": 0.5192307692307693,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": -0.4843246820972319,
+    "cagr": -0.09050979891870015,
+    "ann_volatility": 0.8019387580775132,
+    "sharpe": 0.2640943600403134,
+    "sortino": 0.3546839942179496,
+    "calmar": -0.09395386331033073,
+    "max_drawdown": -0.9633430252862003,
+    "max_drawdown_days": 268,
+    "win_rate": 0.2876712328767123,
+    "profit_factor": 1.146568109387468,
+    "avg_win": 0.11045094690924008,
+    "avg_loss": -0.08359369341924114,
+    "payoff_ratio": 1.3212832498655585,
+    "n_periods": 365,
+    "best_period": 0.7777788598708162,
+    "worst_period": -0.4893808531816276
+  }
+}

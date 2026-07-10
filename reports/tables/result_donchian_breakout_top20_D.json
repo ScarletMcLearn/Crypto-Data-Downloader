@@ -1,0 +1,31 @@
+{
+  "strategy": "donchian_breakout",
+  "universe": "top20",
+  "cost_tier": "base",
+  "start": "2019-07-01",
+  "end": "2026-07-01",
+  "final_equity": 16.187638871177654,
+  "n_trades": 3344,
+  "total_fee_cost": 5.404566635301466,
+  "total_slippage_cost": 4.323653308241172,
+  "avg_turnover_per_rebalance": 0.12968756789640637,
+  "capacity_breaches": 0,
+  "performance": {
+    "total_return": 15.187638871177654,
+    "cagr": 0.4880084216211089,
+    "ann_volatility": 0.8523790771133819,
+    "sharpe": 0.889957869414351,
+    "sortino": 1.2166319339853473,
+    "calmar": 0.587304754911684,
+    "max_drawdown": -0.8309287768230196,
+    "max_drawdown_days": 1070,
+    "win_rate": 0.4452697419859265,
+    "profit_factor": 1.1537969076300187,
+    "avg_win": 0.035016113991315725,
+    "avg_loss": -0.0315392779636221,
+    "payoff_ratio": 1.1102382886413524,
+    "n_periods": 2558,
+    "best_period": 0.48641949363715087,
+    "worst_period": -0.3383723507706241
+  }
+}

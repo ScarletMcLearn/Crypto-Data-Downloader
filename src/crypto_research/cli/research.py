@@ -28,6 +28,7 @@ from crypto_research.strategies.cross_sectional_momentum import (
     build_cross_sectional_momentum_weights,
 )
 from crypto_research.strategies.mean_reversion import build_mean_reversion_weights
+from crypto_research.strategies.volume_breakout import build_volume_breakout_weights
 from crypto_research.universe.builder import (
     build_universe,
     discover_all_symbols,
@@ -82,12 +83,38 @@ def run_strategy(
         target_weights = btc_trend_target_weights(btc_close)
         target_weights = target_weights.reindex(rebalance_dates).ffill().fillna(0.0)
         universe_symbols = ["BTCUSDT"]
-    elif strategy in ("cross_sectional_momentum", "mean_reversion"):
+    elif strategy.startswith("cross_sectional_momentum") or strategy == "mean_reversion":
         panel = build_feature_panel(symbols_needed)
-        if strategy == "cross_sectional_momentum":
-            target_weights = build_cross_sectional_momentum_weights(panel, universe_by_date, top_n=top_n)
-        else:
+        if strategy == "mean_reversion":
             target_weights = build_mean_reversion_weights(panel, universe_by_date, bottom_n=top_n)
+        else:
+            # Variant flags encoded in the strategy name suffix.
+            momentum_col = "momentum_30d_skip7" if "skipweek" in strategy else "momentum_30d"
+            target_weights = build_cross_sectional_momentum_weights(
+                panel,
+                universe_by_date,
+                momentum_col=momentum_col,
+                top_n=top_n,
+                require_btc_uptrend="gated" in strategy,
+                weighting="inverse_vol" if "ivol" in strategy else "equal",
+            )
+        universe_symbols = symbols_needed
+    elif strategy.startswith(("volume_breakout", "donchian_breakout")):
+        panel = build_feature_panel(symbols_needed)
+        if strategy.startswith("donchian_breakout"):
+            confirm = "none"
+        elif "volz" in strategy:
+            confirm = "volume_z"
+        else:
+            confirm = "taker"
+        target_weights = build_volume_breakout_weights(
+            panel,
+            universe_by_date,
+            confirm=confirm,
+            max_positions=top_n,
+            require_btc_uptrend="gated" in strategy,
+            fixed_slice="fixed" in strategy,
+        )
         universe_symbols = symbols_needed
     elif strategy == "buy_and_hold_btc":
         universe_symbols = ["BTCUSDT"]
