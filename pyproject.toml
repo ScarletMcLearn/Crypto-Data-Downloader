@@ -8,7 +8,7 @@ dependencies = [
     "duckdb==1.5.4",
     "httpx==0.28.1",
     "matplotlib==3.11.0",
-    "numpy==2.5.1",
+    "numpy>=1.22,<2.5",
     "pandas==3.0.3",
     "polars==1.42.1",
     "pyarrow==24.0.0",
@@ -19,6 +19,8 @@ dependencies = [
     "scipy==1.18.0",
     "statsmodels==0.14.6",
     "tqdm==4.68.4",
+    "vectorbt==0.28.0",
+    "backtesting==0.6.4",
 ]
 
 [tool.uv]
